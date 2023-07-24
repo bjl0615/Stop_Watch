@@ -1,10 +1,16 @@
 package com.example.stop_watch
 
+import android.media.AudioManager
+import android.media.ToneGenerator
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.provider.MediaStore.Audio
 import android.util.Log
+import android.view.Gravity
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
+import androidx.core.view.setPadding
 import com.example.stop_watch.databinding.ActivityMainBinding
 import com.example.stop_watch.databinding.DialogCountdownSettingBinding
 import java.util.Timer
@@ -13,10 +19,10 @@ import kotlin.concurrent.timer
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-    private var countdownSecond = 10
+    private var countdownSecond = 5
     private var currentCountdownDeciSecond = countdownSecond * 10
     private var currentDeciSecond = 0
-    private var timer : Timer? = null
+    private var timer: Timer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,7 +57,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initCountdownViews() {
-        binding.countdownTextView.text = String.format("%02d" , countdownSecond)
+        binding.countdownTextView.text = String.format("%02d", countdownSecond)
         binding.countdownProgressBar.progress = 100
     }
 
@@ -65,8 +71,7 @@ class MainActivity : AppCompatActivity() {
                 val deciSeconds = currentDeciSecond % 10
 
                 runOnUiThread {
-                    binding.timeTextView.text =
-                        String.format("%02d:%02d", minutes, seconds)
+                    binding.timeTextView.text = String.format("%02d:%02d", minutes, seconds)
                     binding.tickTextView.text = deciSeconds.toString()
 
                     binding.countdownGroup.isVisible = false
@@ -80,6 +85,11 @@ class MainActivity : AppCompatActivity() {
                     binding.countdownTextView.text = String.format("%02d", seconds)
                     binding.countdownProgressBar.progress = progress.toInt()
                 }
+            }
+            if(currentDeciSecond == 0 && currentCountdownDeciSecond < 31 && currentCountdownDeciSecond % 10 == 0){
+                val toneType = if(currentCountdownDeciSecond == 0) ToneGenerator.TONE_CDMA_HIGH_L else ToneGenerator.TONE_CDMA_ANSWER
+                ToneGenerator(AudioManager.STREAM_ALARM, ToneGenerator.MAX_VOLUME)
+                    .startTone(toneType, 100)
             }
         }
     }
@@ -101,9 +111,29 @@ class MainActivity : AppCompatActivity() {
 
         binding.countdownGroup.isVisible = true
         initCountdownViews()
+        binding.lapContainerLinearLayout.removeAllViews()
     }
 
     private fun lap() {
+        if (currentDeciSecond == 0) return
+            val container = binding.lapContainerLinearLayout
+            TextView(this).apply {
+                textSize = 20f
+                gravity = Gravity.CENTER
+                val minutes = currentDeciSecond.div(10) / 60
+                val seconds = currentDeciSecond.div(10) % 60
+                val deciSeconds = currentDeciSecond % 10
+                text = "${container.childCount.inc()}." + String.format(
+                    "%02d:%02d %01d",
+                    minutes,
+                    seconds,
+                    deciSeconds
+                )
+                // 1. 01:03 0
+                setPadding(30)
+            }.let { labTextView ->
+                container.addView(labTextView, 0)
+            }
 
     }
 
